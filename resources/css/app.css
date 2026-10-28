@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@source "../views";
 
 /* 1. Plugin DaisyUI */
 @plugin "daisyui";
