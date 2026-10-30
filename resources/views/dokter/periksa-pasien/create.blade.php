@@ -16,9 +16,51 @@
     <div class="card bg-base-100 shadow-sm rounded-2xl border border-slate-200">
         <div class="card-body p-8">
 
+            <section class="rounded-xl border border-indigo-100 bg-indigo-50/60 p-5 mb-6" aria-labelledby="patient-info-title">
+                <h3 id="patient-info-title" class="font-bold text-slate-800 mb-4">Informasi Pasien</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <p class="text-xs text-slate-500">Nama pasien</p>
+                        <p class="font-semibold text-slate-800">{{ $daftarPoli->pasien?->nama ?? 'Pasien' }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-slate-500">No. antrean</p>
+                        <p class="font-semibold text-slate-800">{{ $daftarPoli->no_antrian }}</p>
+                    </div>
+                </div>
+                <div>
+                    <p class="text-xs text-slate-500 mb-1">Keluhan pasien</p>
+                    <p class="text-sm text-slate-700 whitespace-pre-line">{{ $daftarPoli->keluhan ?: 'Tidak ada keluhan yang dicatat.' }}</p>
+                </div>
+            </section>
+
             <form action="{{ route('periksa-pasien.store') }}" method="POST">
                 @csrf
-                <input type="hidden" name="id_daftar_poli" value="{{ $id }}">
+                <input type="hidden" name="id_daftar_poli" value="{{ $daftarPoli->id }}">
+
+                @if ($errors->any())
+                    <div class="alert alert-error mb-5" role="alert">
+                        <div>
+                            <p class="font-semibold">Pemeriksaan belum tersimpan.</p>
+                            <ul class="list-disc pl-5">
+                                @foreach ($errors->all() as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    </div>
+                @endif
+
+                {{-- Keluhan --}}
+                <div class="form-control mb-5">
+                    <label class="label pb-1">
+                        <span class="text-sm font-semibold text-gray-700">Keluhan <span class="text-red-500">*</span></span>
+                    </label>
+                    <textarea name="keluhan" id="keluhan" rows="4"
+                        placeholder="Masukkan keluhan pasien..."
+                        class="textarea textarea-bordered w-full border-2 px-4 py-2 rounded-lg resize-none">{{ old('keluhan') }}</textarea>
+                    <p class="text-xs text-slate-400 font-normal mt-1">* Wajib diisi karena ada constraint not null di database</p>
+                </div>
 
                 {{-- Pilih Obat --}}
                 <div class="form-control mb-5">
@@ -45,8 +87,11 @@
 
                     <ul id="obat-terpilih" class="flex flex-col gap-2 mb-2 min-h-[48px]"></ul>
 
-                    <input type="hidden" name="biaya_periksa" id="biaya_periksa" value="0">
-                    <input type="hidden" name="obat_json" id="obat_json">
+                    <input type="hidden" name="obat_json" id="obat_json" value="{{ old('obat_json', '[]') }}">
+                <input type="hidden" name="biaya_periksa" id="biaya_periksa" value="{{ $biayaKonsultasi }}">
+                    @error('obat_json')
+                        <p class="text-sm text-error mt-1">{{ $message }}</p>
+                    @enderror
                 </div>
 
                 {{-- Total Harga --}}
@@ -55,7 +100,7 @@
                         <span class="text-sm font-semibold text-gray-700">Total Harga</span>
                     </label>
                     <div class="input input-bordered w-full rounded-lg flex items-center bg-slate-50 text-slate-700 font-bold" id="total-harga">
-                        Rp 0
+                        Rp {{ number_format($biayaKonsultasi, 0, ',', '.') }}
                     </div>
                 </div>
 
@@ -89,9 +134,9 @@
     <script>
         const selectObat = document.getElementById('select-obat');
         const listObat = document.getElementById('obat-terpilih');
-        const inputBiaya = document.getElementById('biaya_periksa');
         const inputObatJson = document.getElementById('obat_json');
         const totalHargaEl = document.getElementById('total-harga');
+        const biayaKonsultasi = @json($biayaKonsultasi);
 
         let daftarObat = [];
 
@@ -110,10 +155,10 @@
 
         function renderObat() {
             listObat.innerHTML = '';
-            let total = 0;
+            let totalObat = 0;
 
             daftarObat.forEach((obat, index) => {
-                total += obat.harga;
+                totalObat += obat.harga;
 
                 const item = document.createElement('li');
                 item.className = 'flex items-center justify-between px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-700';
@@ -128,9 +173,25 @@
                 listObat.appendChild(item);
             });
 
-            inputBiaya.value = total;
-            totalHargaEl.textContent = `Rp ${total.toLocaleString()}`;
+            totalHargaEl.textContent = `Rp ${(biayaKonsultasi + totalObat).toLocaleString('id-ID')}`;
             inputObatJson.value = JSON.stringify(daftarObat.map(o => o.id));
+        }
+
+        try {
+            const oldObatIds = JSON.parse(inputObatJson.value || '[]');
+            oldObatIds.forEach((id) => {
+                const option = Array.from(selectObat.options).find((item) => item.value === String(id));
+                if (option && option.value) {
+                    daftarObat.push({
+                        id: option.value,
+                        nama: option.dataset.nama,
+                        harga: Number(option.dataset.harga || 0),
+                    });
+                }
+            });
+            renderObat();
+        } catch {
+            inputObatJson.value = '[]';
         }
 
         function hapusObat(index) {

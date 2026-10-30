@@ -59,12 +59,19 @@
                                     <span class="badge bg-green-100 text-green-700 border border-green-200 rounded-lg px-3 py-1 text-xs font-semibold">
                                         <i class="fas fa-circle-check mr-1"></i>Sudah Diperiksa
                                     </span>
-                                @else
-                                    <a href="{{ route('periksa-pasien.create', $dp->id) }}"
-                                        class="btn btn-sm bg-amber-500 hover:bg-amber-600 text-white border-none rounded-lg px-4">
-                                        <i class="fas fa-stethoscope"></i>
-                                        Periksa
+                                    <a href="{{ route('periksa-pasien.detail', $dp->periksas->last()->id) }}"
+                                       class="btn btn-sm btn-ghost text-primary ml-2 detail-btn">
+                                        <i class="fas fa-eye"></i>Detail
                                     </a>
+                                @else
+                                    <form method="POST" action="{{ route('periksa-pasien.call', $dp->id) }}">
+                                        @csrf
+                                        <button type="submit"
+                                            class="btn btn-sm bg-amber-500 hover:bg-amber-600 text-white border-none rounded-lg px-4">
+                                            <i class="fas fa-stethoscope"></i>
+                                            Periksa
+                                        </button>
+                                    </form>
                                 @endif
                             </td>
 

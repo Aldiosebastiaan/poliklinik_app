@@ -21,6 +21,11 @@
 /storage/*.key
 /storage/pail
 /vendor
+public/uploads/
+mcp.json
+.mcp.json
+boost.json
+AGENTS.md
 _ide_helper.php
 Homestead.json
 Homestead.yaml

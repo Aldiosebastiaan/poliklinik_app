@@ -2,17 +2,34 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Exports\TableExport;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Maatwebsite\Excel\Facades\Excel;
 
 class PasienController extends Controller
 {
     public function index()
     {
         $pasiens = User::where('role', 'pasien')->with('poli')->get();
+
         return view('admin.pasien.index', compact('pasiens'));
+    }
+
+    public function export()
+    {
+        $rows = User::where('role', 'pasien')->orderBy('nama')->get()
+            ->map(fn (User $pasien): array => [
+                $pasien->nama,
+                $pasien->email,
+                $pasien->no_ktp,
+                $pasien->no_hp,
+                $pasien->alamat,
+            ])->all();
+
+        return Excel::download(new TableExport($rows, ['Nama Pasien', 'Email', 'No. KTP', 'No. HP', 'Alamat']), 'data-pasien.xlsx');
     }
 
     public function create()
@@ -54,9 +71,9 @@ class PasienController extends Controller
         $request->validate([
             'nama' => 'required|string|max:255',
             'alamat' => 'required|string',
-            'no_ktp' => 'required|string|max:16|unique:users,no_ktp,' . $pasien->id,
+            'no_ktp' => 'required|string|max:16|unique:users,no_ktp,'.$pasien->id,
             'no_hp' => 'required|string|max:15',
-            'email' => 'required|string|email|unique:users,email,' . $pasien->id,
+            'email' => 'required|string|email|unique:users,email,'.$pasien->id,
             'password' => 'required|string|min:6',
         ]);
 
@@ -83,6 +100,7 @@ class PasienController extends Controller
     public function destroy(User $pasien)
     {
         $pasien->delete();
+
         return redirect()
             ->route('pasien.index')
             ->with('message', 'Data Pasien berhasil dihapus')
