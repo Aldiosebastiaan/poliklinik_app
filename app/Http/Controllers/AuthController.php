@@ -22,14 +22,14 @@ class AuthController extends Controller
             $user = Auth::user();
             if ($user->role === 'admin') {
                 return redirect()->route('admin.dashboard');
-            } else if ($user->role === 'dokter') {
+            } elseif ($user->role === 'dokter') {
                 return redirect()->route('dokter.dashboard');
             } else {
                 return redirect()->route('pasien.dashboard');
             }
         }
 
-        return back()->withErrors(['email', 'Email atau password salah']);
+        return back()->withErrors(['email' => 'Email atau password salah'])->withInput();
     }
 
     public function showRegister()
@@ -45,12 +45,12 @@ class AuthController extends Controller
             'no_ktp' => 'required|numeric|unique:users,no_ktp',
             'no_hp' => 'required|numeric',
             'email' => 'required|email|unique:users,email',
-            'password' => 'required|min:6'
+            'password' => 'required|min:6',
         ]);
 
         $lastPasien = User::where('role', 'pasien')->orderBy('id', 'desc')->first();
         $lastId = $lastPasien ? $lastPasien->id + 1 : 1;
-        $no_rm = date('Ym') . '-' . str_pad($lastId, 3, '0', STR_PAD_LEFT);
+        $no_rm = date('Ym').'-'.str_pad($lastId, 3, '0', STR_PAD_LEFT);
 
         User::create([
             'nama' => $request->nama,
@@ -69,6 +69,7 @@ class AuthController extends Controller
     public function logout()
     {
         Auth::logout();
+
         return redirect()->route('login');
     }
 }

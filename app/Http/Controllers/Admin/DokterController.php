@@ -2,23 +2,42 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Exports\TableExport;
 use App\Http\Controllers\Controller;
 use App\Models\Poli;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Maatwebsite\Excel\Facades\Excel;
 
 class DokterController extends Controller
 {
     public function index()
     {
         $dokters = User::where('role', 'dokter')->with('poli')->get();
+
         return view('admin.dokter.index', compact('dokters'));
+    }
+
+    public function export()
+    {
+        $rows = User::where('role', 'dokter')->with('poli')->orderBy('nama')->get()
+            ->map(fn (User $dokter): array => [
+                $dokter->nama,
+                $dokter->email,
+                $dokter->no_ktp,
+                $dokter->no_hp,
+                $dokter->alamat,
+                $dokter->poli?->nama_poli,
+            ])->all();
+
+        return Excel::download(new TableExport($rows, ['Nama Dokter', 'Email', 'No. KTP', 'No. HP', 'Alamat', 'Poli']), 'data-dokter.xlsx');
     }
 
     public function create()
     {
         $polis = Poli::all();
+
         return view('admin.dokter.create', compact('polis'));
     }
 
@@ -53,6 +72,7 @@ class DokterController extends Controller
     public function edit(User $dokter)
     {
         $polis = Poli::all();
+
         return view('admin.dokter.edit', compact('dokter', 'polis'));
     }
 
@@ -61,10 +81,10 @@ class DokterController extends Controller
         $request->validate([
             'nama' => 'required|string|max:255',
             'alamat' => 'required|string',
-            'no_ktp' => 'required|string|max:16|unique:users,no_ktp,' . $dokter->id,
+            'no_ktp' => 'required|string|max:16|unique:users,no_ktp,'.$dokter->id,
             'no_hp' => 'required|string|max:15',
             'id_poli' => 'required|string|exists:poli,id',
-            'email' => 'required|string|unique:users,email,' . $dokter->id,
+            'email' => 'required|string|unique:users,email,'.$dokter->id,
             'password' => 'nullable|string|min:6',
         ]);
 

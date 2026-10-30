@@ -12,7 +12,8 @@ class Periksa extends Model
         'id_daftar_poli',
         'tgl_periksa',
         'catatan',
-        'biaya_periksa'
+        'biaya_periksa',
+        'keluhan',
     ];
 
     public function daftarPoli()
